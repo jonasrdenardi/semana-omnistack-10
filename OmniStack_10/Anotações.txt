@@ -1,0 +1,10 @@
+*Tipos de parâmetros do express
+Query Params: na URL ?. request.query (Filtros, Ordenação, Paginação, ...)
+Route Params: divisao por /. request.params (Identificar um recurso na alteração ou remoção)
+Body: Dados para a criação ou alteração de registro
+
+*3 características
+Componente: Bloco isolado de HTML, CSS e JS, o qual não interfer no restante da aplicação
+Propriedade: Informações que um componente filho
+Estado: Informações mantidas pelo componente (Lembrar: imutabilidade)
+
