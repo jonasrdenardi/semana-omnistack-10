@@ -3,7 +3,9 @@ import {StyleSheet, Image, View, Text, TextInput, TouchableOpacity} from 'react-
 import MapView, {Marker, Callout} from "react-native-maps";
 import { requestPermissionsAsync, getCurrentPositionAsync } from "expo-location";
 import {MaterialIcons} from '@expo/vector-icons';
+
 import api from "../services/api";
+import {connect,disconnect, subscribeToNewDevs} from "../services/socket";
 
 function Main({navigation}) {
     const [devs, setDevs] = useState([]);
@@ -11,7 +13,7 @@ function Main({navigation}) {
     const [techs, setTechs] = useState('');
 
     useEffect(() => {
-        async function loadInitionPosition() {
+        async function loadInitialPosition() {
             const {granted} = await requestPermissionsAsync();   
         
             if (granted) {
@@ -19,7 +21,7 @@ function Main({navigation}) {
                     enableHighAccuracy:true,
                 });
 
-                const {latitude,longitude} = coords;
+                const {latitude, longitude } = coords;
 
                 setCurrentRegion({
                     latitude,
@@ -28,13 +30,24 @@ function Main({navigation}) {
                     longitudeDelta: 0.04
                 });
             }
-        }
-        
-        loadInitionPosition();
-    },[]);
+        }        
+        loadInitialPosition();
+    }, []);
 
-    function handleRegionChanged(region) {
-        setCurrentRegion(region);
+    useEffect(() => {
+        subscribeToNewDevs(dev => setDevs([...devs,dev]));
+    }, [devs]);
+
+    function setupWebSocket() {
+        disconnect();
+
+        const {latitude, longitude} = currentRegion;
+
+        connect(
+            latitude,
+            longitude,
+            techs
+        );
     }
 
     async function loadDevs() {
@@ -49,6 +62,11 @@ function Main({navigation}) {
         });
         
         setDevs(response.data.devs);
+        setupWebSocket();
+    }
+
+    function handleRegionChanged(region) {
+        setCurrentRegion(region);
     }
 
     if (!currentRegion) {
@@ -61,13 +79,14 @@ function Main({navigation}) {
                 onRegionChangeComplete={handleRegionChanged} 
                 initialRegion={currentRegion} style={styles.map}
             >
-                {devs.map(dev => (
+                {
+                devs.map(dev => (
                     <Marker 
                         key={dev._id}
                         coordinate={{
                             longitude: dev.location.coordinates[0],
-                            latitude: dev.location.coordinates[1], 
-                            }}
+                            latitude: dev.location.coordinates[1] 
+                        }}
                     >
                         <Image 
                             style={styles.avatar} 
@@ -144,6 +163,7 @@ const styles = StyleSheet.create({
         height:50,
         borderColor: '#fff',
         color:'#333',
+        backgroundColor:"#fff",
         borderRadius:25,
         paddingHorizontal:20,
         fontSize:16,
@@ -153,7 +173,7 @@ const styles = StyleSheet.create({
             width:4,
             height:4
         },
-        elevation:3
+        elevation:4
     },
     loadButton:{
         width:50,
